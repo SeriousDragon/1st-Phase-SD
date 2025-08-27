@@ -1,0 +1,6 @@
+streamlit
+scikit-learn
+catboost
+xgboost
+lightgbm
+joblib
