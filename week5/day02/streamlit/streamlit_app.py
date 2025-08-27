@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import joblib
 from pathlib import Path
-
+import os
 st.set_page_config(page_title="Heart Disease Predictor", page_icon="❤️", layout="centered")
 
 st.title("❤️ Heart Disease Predictor")
@@ -11,7 +11,7 @@ st.caption("Введите признаки пациента и получите
 # ---- Load trained pipeline ----
 @st.cache_resource
 def load_pipeline(path: str = "best_pipeline.pkl"):
-    p = Path(path)
+    p = Path(__file__).parent / path
     if not p.exists():
         st.error(
             "Файл 'best_pipeline.pkl' не найден. "
