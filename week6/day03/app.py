@@ -116,11 +116,9 @@ with col2:
     st.write("Пропусков:", int(ser.isna().sum()))
     st.write("Среднее:", f"{ser.mean():.2f}")
 
-# --- после формирования ser ---
-# серийный ряд должен быть без NaN и с частотой freq
 ser = ser.sort_index().dropna()
 
-# 1) Сплит (защитимся от слишком малого ряда)
+# Сплит 
 # если пользователь задал слишком большой h — ужмём его
 h = int(min(h, max(1, len(ser) // 8)))
 if h <= 0 or len(ser) < (p + d + q + max(2, s and (P + D + Q) * 2)):
@@ -130,13 +128,13 @@ if h <= 0 or len(ser) < (p + d + q + max(2, s and (P + D + Q) * 2)):
 y_train = ser.iloc[:-h]
 y_test  = ser.iloc[-h:]
 
-# 2) Бейзлайны (на случай падения SARIMA)
+# Бейзлайны (на случай падения SARIMA)
 naive = pd.Series(y_train.iloc[-1], index=y_test.index)
 w = min(4, max(1, len(y_train) // 12))
 ma_val = y_train.rolling(w).mean().iloc[-1] if len(y_train) >= w else y_train.mean()
 moving_avg = pd.Series(ma_val, index=y_test.index)
 
-# 3) SARIMA fit c try/except
+# SARIMA fit 
 order = (int(p), int(d), int(q))
 seasonal_order = (int(P), int(D), int(Q), int(s)) if s else (0, 0, 0, 0)
 trend = "c" if use_const else None
@@ -144,15 +142,15 @@ trend = "c" if use_const else None
 import numpy as np
 from statsmodels.tsa.statespace.sarimax import SARIMAX
 
-# 0) лог-преобразование (стабилизирует масштаб и дисперсию)
+# лог-преобразование (стабилизирует масштаб и дисперсию)
 eps = 1e-6
 y_train_pos = y_train.clip(lower=eps)
 y_test_pos  = y_test.clip(lower=eps)
 
 y_train_t = np.log1p(y_train_pos)
 
-# 1) более стабильные параметры + ограничения
-order = (1, 1, 1)                               # попроще
+# более стабильные параметры + ограничения
+order = (1, 1, 1)                              
 seasonal_order = (1, 0, 1, int(s)) if int(s) else (0, 0, 0, 0)
 trend = "c" if use_const else None
 
@@ -166,7 +164,7 @@ model = SARIMAX(
 )
 fit = model.fit(disp=False, maxiter=500)
 
-# 2) прогноз в лог-пространстве → обратно к исходной шкале
+# прогноз в лог-пространстве → обратно к исходной шкале
 fc = fit.get_forecast(steps=h)
 pred_t = pd.Series(fc.predicted_mean, index=y_test.index)
 ci_t   = fc.conf_int(alpha=0.05)
@@ -175,7 +173,7 @@ y_pred = np.expm1(pred_t)                       # обратно из логов
 lower  = pd.Series(np.expm1(ci_t.iloc[:, 0]).values, index=y_test.index)
 upper  = pd.Series(np.expm1(ci_t.iloc[:, 1]).values, index=y_test.index)
 
-# 4) Метрики (если есть тестовые точки)
+# Метрики (если есть тестовые точки)
 def mae_safe(y_true, y_hat):
     try:
         from sklearn.metrics import mean_absolute_error
@@ -201,7 +199,7 @@ res_rows.append({"model": f"SARIMA{order}x{seasonal_order}", "MAE": mae_safe(y_t
 st.subheader("Метрики (на последних h периодах)")
 st.dataframe(pd.DataFrame(res_rows), use_container_width=True)
 
-# 5) Прогноз — график + таблица + скачивание
+# Прогноз — график + таблица + скачивание
 st.subheader("Прогноз")
 fig2, ax2 = plt.subplots()
 y_train.plot(ax=ax2, label="Train")
