@@ -149,10 +149,10 @@ y_test_pos  = y_test.clip(lower=eps)
 
 y_train_t = np.log1p(y_train_pos)
 
-# более стабильные параметры + ограничения
-order = (1, 1, 1)                              
-seasonal_order = (1, 0, 1, int(s)) if int(s) else (0, 0, 0, 0)
-trend = "c" if use_const else None
+# # более стабильные параметры + ограничения
+# order = (1, 1, 1)                              
+# seasonal_order = (1, 0, 1, int(s)) if int(s) else (0, 0, 0, 0)
+# trend = "c" if use_const else None
 
 model = SARIMAX(
     y_train_t,
